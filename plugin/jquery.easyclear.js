@@ -22,40 +22,97 @@
     var pluginName = "easyClear",
         fullName = "plugin_" + pluginName,
         defaults = {
-            contents: '&#x274C;',
-            style: {
+            'contents': '&#x274C;',
+            'style': {
                 'font-size' : '1em',
                 'color'     : 'red',
-                'background': 'transparent'
+                'background': 'transparent',
+                'cursor':     'pointer',
+                'border':     '0',
+                'padding':    '0',
+                'margin':     '0',
+                'line-height':'1'
             }
         };
 
     function Plugin( element, options ) {
-        this.$element = $(element);
+        var $element = $( element );
 
-        this.options = $.extend( true, {}, defaults, options );
-
-        this._defaults = defaults;
-        this._name = pluginName;
+        $.extend( this, {
+            '$butt': null,
+            '$element': $element,
+            '$parent': $element.parent(),
+            'options': $.extend( true, {}, defaults, options ),
+            '_defaults': defaults,
+            '_name': pluginName
+        });
 
         this.init();
     };
 
     Plugin.prototype = {
 
-        init: function() {
+        'init': function() {
 
-            var $parent = this.$element.parent(),
-                $butt = $('<span>').html( this.options.contents ).appendTo( $parent ).css( this.options.style );
+            var position,
+                self = this;
+
+            this.$butt = $('<button>')
+                    .html( this.options.contents )
+                    .appendTo( this.$parent )
+                    .css( this.options.style );
+
+            this.$parent.css('position', 'relative');
+
+            this.$element.css('position', 'relative');
+
+            position = this.position();
+            this.$butt.css({
+                'position': 'absolute',
+                'top': position.top,
+                'left': position.left
+            });
+
+            this.$butt.on('click', function( evt ) {
+                var $this = $(this);
+
+                evt.preventDefault();
+
+                self.$element
+                    .val('')
+                    .focus();
+            });
 
         },
 
-        destroy: function() {
+        'position': function() {
+
+            var top = this.$element.position().top,
+                left = this.$element.position().left,
+                difference;
+
+            difference = (this.$element.outerHeight() - this.$butt.outerHeight()) / 2
+
+            top += this.$element.outerHeight() / 2;
+            left += this.$element.outerWidth();
+
+            left -= this.$butt.outerWidth();
+
+            top -= difference;
+
+            return {
+                top: top,
+                left: left
+            };
+        },
+
+        'destroy': function() {
 
             this.$element.removeData( fullName );
 
-            this.$element.off('.' + pluginName);
+            this.$element.off( '.' + pluginName );
 
+            this.$parent.off( '.' + pluginName );
         }
 
     };
@@ -64,9 +121,10 @@
     // preventing against multiple instantiations
     $.fn[pluginName] = function ( options ) {
         return this.each(function () {
-            if (!$.data(this, fullName)) {
+            if ( !$.data(this, fullName) ) {
                 $.data(this, fullName, new Plugin( this, options ));
             }
+            return $.data(this, fullName);
         });
     };
 
